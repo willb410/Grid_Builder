@@ -106,6 +106,36 @@ class Rhythm:
             self.notes[position].add_modifier(modifier)
         self.modulators[name] = modifier
 
+    def modulate(self, name=None, direction='forward'):
+        ''' Move modulator forward or backward '''
+
+        mod = [*self.modulators.values()][0] if not name else self.modulators[name]
+
+        if mod._note:
+            position = self.notes.index(mod._note)
+            mod._note.remove_modifier(mod.name)
+        else:
+            position = None
+            
+        if direction == 'forward':
+            if position != None:
+                position += 1
+            else:
+                position = 0
+        elif direction == 'backward':
+            if position != None:
+                position -= 1
+            else:
+                position = -1
+        else:
+            raise Exception(f"position only accepts 'forward' or 'backward', value {position} passed")
+
+        self.notes[position].add_modifier(mod)
+        
+
+    def set_modulator_position(self, position):
+        pass
+
 
     #########################################
     #                Sticking               #
