@@ -1,6 +1,8 @@
 import functools
 from copy import deepcopy
 
+import music21 as m21
+
 try:
     from .Classes import *
     from .Notes import *
@@ -11,29 +13,32 @@ except:
     from Modifiers import *
 
 
-class Rhythm:
+class Rhythm(m21.stream.Stream):
 
     def __init__(self, default_duration: float, notes: list=None):
         
-        self._default_duration = default_duration # Default duration value for Notes
+        super().__init__()
+        
+        # Default duration value for Notes
+        self._default_duration = default_duration #m21.duration.Duration(default_duration * 4) 
 
-        self.notes = [] if notes is None else notes # Container for Note objects
+        # self._notes = [] if notes is None else notes # Container for Note objects
 
         self.modulators = {}
         
         # Space taken up by rhythm, eigth note would be .125
-        self._duration: float = self.duration
+        self._duration = self.duration
 
     def __repr__(self):
-        return f"Rhythm(duration={round(self.duration, 4)}, notes={self.notes})"
+        return f"Rhythm({self.duration.type}, notes={[*self.notes]})"
         
-    @property
-    def duration(self):
-        ''' Sum of duration from Note objects in the rhythm '''
-        self._duration = 0
-        for note in self.notes:
-            self._duration += note.duration
-        return self._duration
+    # @property
+    # def duration(self):
+    #     ''' Sum of duration from Note objects in the rhythm '''
+    #     self._duration = 0
+    #     for note in self.notes:
+    #         self._duration += note.duration
+    #     return self._duration
 
     def set_duration(self, *new_durations):
         ''' Adjust the duration of all notes in the Rhythm '''
@@ -55,7 +60,8 @@ class Rhythm:
 
     def add(self, *notes):
         ''' Add new Notes to the end of the Rhythm'''
-        self.notes.extend([*notes])
+        # self._notes.extend([*notes])
+        [self.append(note) for note in notes]
 
     def add_note(self, sticking=None, dur_mod=None, *mods, **kwargs):
         ''' Add a single Note by passing Note parameters '''
@@ -106,7 +112,7 @@ class Rhythm:
             self.notes[position].add_modifier(modifier)
         self.modulators[name] = modifier
 
-    def modulate(self, name=None, direction='forward'):
+    def modulate(self, direction='forward', name=None):
         ''' Move modulator forward or backward '''
 
         mod = [*self.modulators.values()][0] if not name else self.modulators[name]
@@ -130,8 +136,8 @@ class Rhythm:
         else:
             raise Exception(f"position only accepts 'forward' or 'backward', value {position} passed")
 
-        self.notes[position].add_modifier(mod)
-        
+        self.notes[position % len(self.notes)].add_modifier(mod)
+                    
 
     def set_modulator_position(self, position):
         pass

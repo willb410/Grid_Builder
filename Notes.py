@@ -1,3 +1,5 @@
+import music21 as m21
+
 try:
     from .Classes import *
     from .Rhythms import *
@@ -7,13 +9,15 @@ except:
     from Rhythms import *
     from Modifiers import *
 
-class Note:
+class Note(m21.note.Note):
 
     def __init__(self, duration: float, sticking: str, *modifiers, dynamic=3, dotted=False):
 
+        super().__init__()
+
         # Base properties
-        self.duration = duration # Space taken up by rhythm, eigth note would be .125
-        self._duration_default = duration
+        self._duration = m21.duration.Duration(duration * 4) # Space taken up by rhythm, eigth note would be .125
+        self._duration_default = self._duration
         self.sticking = sticking # R or L
         self._sticking_default = sticking
         self.dynamic = define_dynamic(dynamic) # dynamics dict or 1-15
@@ -32,6 +36,8 @@ class Note:
         self.stem_connection_left = None
         self.stem_connection_right = None
 
+        self.stem_direction = 'up' #one of [up, down, none, double]
+
         # Modifier objects to change base properties
         self.modifiers = [*modifiers]
         if dotted in [True, 'single']: 
@@ -41,8 +47,9 @@ class Note:
         self.apply_modifiers()
 
     def __repr__(self):
-        mod_names = [modifier.name for modifier in self.modifiers]
-        return f"Note(duration={round(self.duration, 4)}, sticking={self.sticking}, dynamic={self.dynamic}, modifiers={mod_names})"
+        mod_names = [(modifier.name, modifier.modulator) for modifier in self.modifiers]
+        
+        return f"Note({self.duration.type}, sticking={self.sticking}, dynamic={self.dynamic}, modifiers={mod_names})"
 
     #########################################
     #           Modifier Actions            #
@@ -110,6 +117,20 @@ class Note:
             self.sticking = 'L'
         elif self.sticking == 'L':
             self.sticking = 'R'
+
+    def get_musicxml(self):
+        ''' Return MusicXML formatted string for the current Note state '''
+
+        f"<note> \
+             <unpitched> \
+                <display-step>A</display-step> \
+                <display-octave>3</display-octave> \
+            </unpitched> \
+            <duration>{'self.duration * self.beat_unit'}</duration> \
+            <type>{'text version of note duration, ex. eigth'}</type> \
+            <stem>{self.stem_direction}</stem> \
+            "
+
 
     def reset_locations(self):
         self.head = 0
