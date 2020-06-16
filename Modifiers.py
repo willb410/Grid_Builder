@@ -1,3 +1,5 @@
+from copy import deepcopy
+import music21 as m21
 from utils import define_dynamic
 
 class Modifier:
@@ -22,6 +24,31 @@ class Modifier:
     def __repr__(self):
         att_vals = [f"{att}={val}, " for att, val in self.__dict__.items() if val]
         return f"{self.name}({''.join(att_vals)})"
+
+
+class BaseModifier:
+    ''' Defining interaction attributes for Note objects 
+        Should not be instantiated directly as some methods are set to feed
+        into child classes'''
+    def __init__(self):
+        
+        self.modulator = False
+        self._note = None
+
+    def add(self, note):
+        note.modifiers.append(self)
+        self._note = note
+
+    def remove(self):
+        note = self._note
+        self._note = None
+
+        for i, mod in enumerate(note.modifiers):
+            if mod is self:
+                note.modifiers.pop(i)
+                return i, note
+        else:
+            return 0, None
 
 ###############################################################################
 #                                                                             #
@@ -59,13 +86,46 @@ class DoubleDot(Modifier):
 #                                                                             #
 ###############################################################################
 
-class Accent(Modifier):
+# class Accent(Modifier):
+
+#     name = 'Accent'
+#     modifier_type = 'articulation'
+
+#     def __init__(self, location: str='top', dynamic=12):
+#         super().__init__(location=location, dynamic=dynamic)
+
+class Articulation(BaseModifier):
+
+    def __init__(self):
+        super().__init__()
+
+    def add(self, note):
+        super().add(note)
+        note.articulations.append(self)
+        
+    # def copy(self, note):
+    #     self.add(note)
+
+    def move(self, new_note):
+        self.remove()
+        self.add(new_note)
+
+    def remove(self):
+        i, note = super().remove()
+        return note.articulations.pop(i)
+
+class Accent(m21.articulations.Accent, Articulation):
 
     name = 'Accent'
     modifier_type = 'articulation'
 
-    def __init__(self, location: str='top', dynamic=12):
-        super().__init__(location=location, dynamic=dynamic)
+    def __init__(self, modulator=False, location='above'):
+        super().__init__()
+
+        # Where the Accent goes in relation to the note, one of ['above', 'below']
+        self.placement = location
+
+        self.modulator = modulator
 
 class Marcato(Modifier):
 

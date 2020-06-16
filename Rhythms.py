@@ -15,11 +15,12 @@ except:
 
 class Rhythm(m21.stream.Stream):
 
-    def __init__(self, default_duration: float, notes: list=None):
+    def __init__(self, default_duration: float=0):
         
         super().__init__()
         
         # Default duration value for Notes
+        # if default_duration == 0: raise TypeError("__init__() missing 1 required positional argument: 'default_duration'")
         self._default_duration = default_duration #m21.duration.Duration(default_duration * 4) 
 
         # self._notes = [] if notes is None else notes # Container for Note objects
@@ -39,6 +40,9 @@ class Rhythm(m21.stream.Stream):
     #     for note in self.notes:
     #         self._duration += note.duration
     #     return self._duration
+
+    def get_duration(self):
+        return self.duration.quarterLength * .25
 
     def set_duration(self, *new_durations):
         ''' Adjust the duration of all notes in the Rhythm '''
@@ -104,39 +108,55 @@ class Rhythm(m21.stream.Stream):
     #           Modulate Modifiers          #
     #########################################    
 
-    def add_modulator(self, modifier, name, position=None):
+    def add_modulator(self, modifier, position=None, name=None):
         ''' Add modulator to the Rhythm '''
-        # Mark modifier to allow it to be applied more than once
+        
+        # Mark modifier to allow it to be moved across notes
         modifier.modulator = True 
+        
+        # Add to Note at specified index
         if position != None:
             self.notes[position].add_modifier(modifier)
+        
+        # Add to modulators dict
+        name = name if name != None else modifier.id
         self.modulators[name] = modifier
 
     def modulate(self, direction='forward', name=None):
         ''' Move modulator forward or backward '''
 
-        mod = [*self.modulators.values()][0] if not name else self.modulators[name]
+        # Get modulator
+        mods = [*self.modulators.values()] if not name else self.modulators[name]
 
-        if mod._note:
-            position = self.notes.index(mod._note)
-            mod._note.remove_modifier(mod.name)
-        else:
-            position = None
+        # Determine current position and remove
+        for mod in mods:
             
-        if direction == 'forward':
-            if position != None:
-                position += 1
+            # Get position
+            for i, note in enumerate(self.notes):
+                if note == mod._note:
+                    position = i
+                    break
             else:
-                position = 0
-        elif direction == 'backward':
-            if position != None:
-                position -= 1
-            else:
-                position = -1
-        else:
-            raise Exception(f"position only accepts 'forward' or 'backward', value {position} passed")
+                position = None
 
-        self.notes[position % len(self.notes)].add_modifier(mod)
+
+            # Send in specified direction
+            if direction == 'forward':
+                if position != None:
+                    position += 1
+                else:
+                    position = 0
+            elif direction == 'backward':
+                if position != None:
+                    position -= 1
+                else:
+                    position = -1
+            else:
+                raise Exception(f"position only accepts 'forward' or 'backward', value {direction} passed")
+
+            new_note = self.notes[position % len(self.notes)]
+            mod.move(new_note)
+
                     
 
     def set_modulator_position(self, position):

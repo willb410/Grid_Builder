@@ -27,12 +27,13 @@ def action(func):
 class MultiRhythm(m21.stream.Stream):
     ''' Controller class for duplicating and modulating rhythms '''
 
-    def __init__(self, rhythm):
+    def __init__(self, rhythm=None):
 
         super().__init__()
 
+        if rhythm == None: raise TypeError("__init__() missing 1 required positional argument: 'rhythm'")
         self.default_rhythm = rhythm
-        self.current_rhythm = rhythm
+        self.current_rhythm = deepcopy(rhythm)
         self.rhythms = [self.current_rhythm]
 
         # Store all actions taken to repeat them later
@@ -89,7 +90,7 @@ def make_16th_note_grid(rhythm=None):
         rhythm.add_note('L')
         rhythm.add_note('R')
         rhythm.add_note('L')
-        rhythm.add_modulator(Accent(), 'accent', position=0)
+        rhythm.add_modulator(Accent(), 0, 'accent')
 
     mr = MultiRhythm(rhythm)
     mr.copy(3) # Fill out first bar

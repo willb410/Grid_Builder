@@ -11,13 +11,13 @@ except:
 
 class Note(m21.note.Note):
 
-    def __init__(self, duration: float, sticking: str, *modifiers, dynamic=3, dotted=False):
+    def __init__(self, duration: float=0, sticking: str='R', modifiers: list=None, dynamic=3, dotted=False):
 
         super().__init__()
 
         # Base properties
         self._duration = m21.duration.Duration(duration * 4) # Space taken up by rhythm, eigth note would be .125
-        self._duration_default = self._duration
+        self._duration_default = deepcopy(self._duration)
         self.sticking = sticking # R or L
         self._sticking_default = sticking
         self.dynamic = define_dynamic(dynamic) # dynamics dict or 1-15
@@ -39,7 +39,7 @@ class Note(m21.note.Note):
         self.stem_direction = 'up' #one of [up, down, none, double]
 
         # Modifier objects to change base properties
-        self.modifiers = [*modifiers]
+        self.modifiers = [] if modifiers == None else modifiers
         if dotted in [True, 'single']: 
             self.modifiers.append(Dot(self))
         elif dotted == 'double': 
@@ -58,9 +58,13 @@ class Note(m21.note.Note):
     def add_modifier(self, modifier):
 
         # Skip modifier if it is already applied to Note
-        if modifier.name in self.get_modifier_names() and not modifier.modulator: return
-        self.modifiers.append(modifier)
-        self.apply_modifiers()
+        # if modifier.name in self.get_modifier_names() and not modifier.modulator: return
+        # self.modifiers.append(modifier)
+        # self.apply_modifiers()
+
+        # Modifier add method
+        modifier.add(self)
+
 
     def add_modifiers(self, *modifiers):
         for mod in modifiers:
@@ -92,20 +96,28 @@ class Note(m21.note.Note):
             if modifier.name == name:
                 break
         removed_modifier = self.modifiers.pop(i)
-        removed_modifier._note = None
+        # removed_modifier._note = None
         
         # Reset modified values in Note
-        for att, val in modifier.__dict__.items():
-            if hasattr(self, att) and val:
-                setattr(self, att, self.__dict__[f"_{att}_default"])
+        # for att, val in modifier.__dict__.items():
+        #     if hasattr(self, att) and val:
+        #         setattr(self, att, self.__dict__[f"_{att}_default"])
 
         # Remove from location
-        self.reset_locations()
+        # self.reset_locations()
 
         # Reapply modifiers in case another modifier of the same type exists
-        self.apply_modifiers()
+        # self.apply_modifiers()
 
         return removed_modifier
+
+    #########################################
+    #           Modifier Actions            #
+    #########################################
+
+    def get_modulators(self):
+        return [mod for mod in self.modifiers if mod.modulator]
+
         
 
     #########################################
